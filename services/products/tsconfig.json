@@ -1,0 +1,17 @@
+{
+    "extends": "../../tsconfig.common.json",
+    "compilerOptions": {
+        "rootDir": "src",
+        "outDir": "dist",
+        "tsBuildInfoFile": "dist/.tsbuildinfo",
+        "module": "CommonJS",
+    },
+    "references": [
+        {
+            "path": "../../lib/utils"
+        },
+        {
+            "path": "../../lib/elastic"
+        }
+    ]
+}

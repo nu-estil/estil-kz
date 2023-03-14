@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "lib": ["ES2019"],
+      "target": "ES2016",
+      "strict": true,
+      "moduleResolution": "node",
+      "skipLibCheck": true,
+      "resolveJsonModule": true,
+      "declaration": true,
+      "declarationMap": true,
+      "esModuleInterop": true,
+      "composite": true,
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "removeComments": false
+    }
+  }

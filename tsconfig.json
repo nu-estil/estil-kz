@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.common.json",
+    "references": [
+      { "path": "lib/utils" },
+    ],
+    "files": [],
+    "include": [],
+    "exclude": ["**/node_modules"]
+  }

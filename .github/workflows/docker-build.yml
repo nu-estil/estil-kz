@@ -1,0 +1,129 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  git_pull:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: GIT pull
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPOP_DEV_SERVER_HOST }}
+          username: ${{ secrets.DEPOP_DEV_SERVER_USER }}
+          port: ${{ secrets.DEPOP_DEV_SERVER_PORT }}
+          key: ${{ secrets.DEPOP_DEV_SERVER_SECRET }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            cd app/depop-main 
+            git pull
+
+      - name: deploy backend
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPOP_DEV_SERVER_HOST }}
+          username: ${{ secrets.DEPOP_DEV_SERVER_USER }}
+          port: ${{ secrets.DEPOP_DEV_SERVER_PORT }}
+          key: ${{ secrets.DEPOP_DEV_SERVER_SECRET }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            cd app/depop-main 
+            DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build backend
+            docker-compose up -d minio postgres logstash
+            docker-compose up -d --force-recreate backend
+            docker-compose exec -T backend yarn migrate:js
+
+      - name: Deploy products service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPOP_DEV_SERVER_HOST }}
+          username: ${{ secrets.DEPOP_DEV_SERVER_USER }}
+          port: ${{ secrets.DEPOP_DEV_SERVER_PORT }}
+          key: ${{ secrets.DEPOP_DEV_SERVER_SECRET }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            cd app/depop-main 
+            DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build products_service
+            docker-compose up -d elasticsearch
+            docker-compose up -d --force-recreate products_service
+
+      - name: Deploy queue service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPOP_DEV_SERVER_HOST }}
+          username: ${{ secrets.DEPOP_DEV_SERVER_USER }}
+          port: ${{ secrets.DEPOP_DEV_SERVER_PORT }}
+          key: ${{ secrets.DEPOP_DEV_SERVER_SECRET }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            cd app/depop-main 
+            DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build queue_service
+            docker-compose up -d redis
+            docker-compose up -d --force-recreate queue_service
+
+      - name: Deploy sms service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPOP_DEV_SERVER_HOST }}
+          username: ${{ secrets.DEPOP_DEV_SERVER_USER }}
+          port: ${{ secrets.DEPOP_DEV_SERVER_PORT }}
+          key: ${{ secrets.DEPOP_DEV_SERVER_SECRET }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            cd app/depop-main 
+            DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build sms_service
+            docker-compose up -d postgres-sms
+            docker-compose up -d --force-recreate sms_service
+            docker-compose exec -T sms_service yarn migrate:js
+
+      - name: Deploy worker service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPOP_DEV_SERVER_HOST }}
+          username: ${{ secrets.DEPOP_DEV_SERVER_USER }}
+          port: ${{ secrets.DEPOP_DEV_SERVER_PORT }}
+          key: ${{ secrets.DEPOP_DEV_SERVER_SECRET }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            cd app/depop-main 
+            DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build worker
+            docker-compose up -d redis
+            docker-compose up -d --force-recreate worker
+
+      - name: Deploy frontend
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPOP_DEV_SERVER_HOST }}
+          username: ${{ secrets.DEPOP_DEV_SERVER_USER }}
+          port: ${{ secrets.DEPOP_DEV_SERVER_PORT }}
+          key: ${{ secrets.DEPOP_DEV_SERVER_SECRET }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            cd app/depop-main 
+            DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build web
+            docker-compose up -d --force-recreate web
+
+      - name: Restart nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPOP_DEV_SERVER_HOST }}
+          username: ${{ secrets.DEPOP_DEV_SERVER_USER }}
+          port: ${{ secrets.DEPOP_DEV_SERVER_PORT }}
+          key: ${{ secrets.DEPOP_DEV_SERVER_SECRET }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            cd app/depop-main 
+            docker-compose up -d --force-recreate nginx

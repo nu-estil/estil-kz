@@ -1,0 +1,240 @@
+DELETE my-index-000001
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "char_filter": {
+        "quote": {
+          "type": "mapping",
+          "mappings": [
+            "« => \"",
+            "» => \""
+          ]
+        }
+      },
+      "normalizer": {
+        "keyword_lowercase": {
+          "type": "custom",
+          "char_filter": [],
+          "filter": ["lowercase"]
+        }
+      }
+    }
+  }, 
+  "mappings": {
+    "properties": {
+      "brand": {
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "text"
+          }
+        }
+      },
+      "categories": {
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "keyword",
+            "normalizer": "keyword_lowercase"
+          },
+          "path": {
+            "type": "keyword",
+            "normalizer": "keyword_lowercase"
+          }
+        }
+      },
+      "size": {
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "keyword",
+            "normalizer": "keyword_lowercase"
+          }
+        }
+      },
+      "condition": {
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "keyword",
+            "index": false
+          }
+        }
+      },
+      "colors": {
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "hex": {
+            "type": "keyword",
+            "index": false
+          },
+          "code": {
+            "type": "keyword",
+            "normalizer": "keyword_lowercase"
+          }
+        }
+      },
+      "image": {
+        "properties": {
+          "original": {
+            "type": "keyword",
+            "index": "false"
+          },
+          "thumbnails": {
+            "type": "object",
+            "enabled": "false"
+          }
+        }
+      },
+      "price": {
+        "type": "double"
+      },
+      "currency": {
+        "type": "keyword",
+        "index": false
+      },
+      "isActive": {
+        "type": "boolean"
+      },
+      "isApproved": {
+        "type": "boolean"
+      },
+      "sold": {
+        "type": "boolean"
+      },
+      "slug": {
+        "type": "keyword",
+        "normalizer": "keyword_lowercase"
+      },
+      "description": {
+        "type": "text"
+      },
+      "createdAt":  { "type": "date" },
+      "updatedAt":  { "type": "date" }
+    }
+  }
+}
+
+PUT my-index-000001/_doc/2
+{
+  "categories": [{
+    "id": 2,
+    "path": "/mens",
+    "name": "mens"
+  },{
+    "id": 3,
+    "path": "/mens/tops",
+    "name": "tops"
+  },{
+    "id": 4,
+    "path": "/mens/tops/shirts",
+    "name": "shirts"
+  }],
+  "brand": {
+    "id": 5,
+    "name": "jack&jones"
+  },
+  "size": {
+    "id": 4,
+    "name": "m"
+  },
+  "condition": {
+    "id": 1,
+    "name": "new_with_tags"
+  },
+  "image": {
+    "original": "https://hello.world",
+    "thumbnails": {
+      "128": "https://hosdfjsl.com"
+    }
+  },
+  "description": "Grey / Red Nike Small Logo Sweatshirt Size on label: L Recommended size: L Condition: 9/10 Pit to pit: 59cm Top of front neckline to bottom of garment: 62cm Sweatshirt is in excellent vintage conditio. Please message us with any questions! L 2BKS23",
+  "price": 1222.23,
+  "currency": "KZT",
+  "isActive": true,
+  "isApproved": true,
+  "sold": false,
+  "slug": "kaina_blouse",
+  "colors": [{"id": 1, "hex": "f00000", "code": "black" }, {"id": 2, "hex": "f00000", "code": "pink" }],
+  "createdAt": "2022-04-18T18:15:00Z",
+  "updatedAt": "2022-04-17T18:15:00Z"
+}
+
+POST my-index-000001/_analyze
+{
+  "analyzer": "standard",
+  "text": "jack&jones Grey / Red Nike Small Logo Sweatshirt Size on label: L Recommended size: L Condition: 9/10 Pit to pit: 59cm Top of front neckline to bottom of garment: 62cm Sweatshirt is in excellent vintage conditio. Please message us with any questions! L 2BKS23"
+}
+
+GET my-index-000001/_search
+{
+  "query": {
+    
+    "match_all": {
+      "description": "sweatshirt size"
+    }
+  }
+}
+GET my-index-000001/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "query_string": {
+            "query":"(tops) OR (mens)", 
+            "fields": [ 
+              "brand.name",
+              "categories.name",
+              "description",
+              "colors.code"
+            ] 
+          }
+        }
+      ], 
+      "filter": [
+        {"term": {"brand.id": 5}},
+        {"term": {"categories.id": 2}},
+        {"term": {"categories.id": 3}},
+        {"term": {"categories.path": "/mens/tops"}},
+        {"term": {"sold": false}},
+        {"term": {"isActive": true}},
+        {"term": {"isApproved": true}},
+        {"range": {
+          "price": {
+            "gte": 0,
+            "lte": 5000
+          }
+        }}
+      ]
+    }
+  },
+  "sort": [
+    "_score",
+    {
+      "createdAt": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match": {
+      "foo": "BAR"
+    }
+  }
+}

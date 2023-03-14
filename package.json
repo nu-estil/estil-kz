@@ -1,0 +1,40 @@
+{
+  "name": "@depop/main",
+  "packageManager": "yarn@3.2.0",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "lib/*"
+  ],
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "eslint . --ext .ts",
+    "build": "yarn workspaces foreach run build",
+    "---utils---": "",
+    "g:tsc": "cd $INIT_CWD && tsc",
+    "---workspaces---": "",
+    "utils": "yarn workspace @depop/utils",
+    "minio": "yarn workspace @depop/minio",
+    "elastic": "yarn workspace @depop/elastic",
+    "backend": "yarn workspace @depop/backend",
+    "products": "yarn workspace @depop/products",
+    "worker": "yarn workspace @depop/worker",
+    "queue": "yarn workspace @depop/queue",
+    "sms": "yarn workspace @depop/sms",
+    "web": "yarn workspace @depop/web"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.23",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^7.0.4",
+    "lerna": "^4.0.0",
+    "prettier": "^2.6.1",
+    "typescript": "^4.6.3"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn lint",
+      "pre-push": "yarn build"
+    }
+  }
+}

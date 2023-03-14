@@ -1,0 +1,495 @@
+# delete index
+DELETE my-index-000001
+
+# create index
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "autocomplete": {
+          "tokenizer": "autocomplete",
+          "filter": [
+            "my_multiplexer"
+          ]
+        },
+        "autocomplete_search": {
+          "tokenizer": "lowercase"
+        }
+      },
+      "filter": {
+        "my_multiplexer": {
+          "type": "multiplexer",
+          "filters": [ "lowercase", "lowercase, space_symbol_filter, shingle", "lowercase, space_symbol_filter, trim"]
+        },
+        "no_symbol_filter": {
+          "type": "pattern_replace",
+          "pattern": "['|&|+|-|_|!]",
+          "replacement": ""
+        },
+        "space_symbol_filter": {
+          "type": "pattern_replace",
+          "pattern": "['|&|+|-|_|!]",
+          "replacement": " "
+        }
+      },
+      "tokenizer": {
+        "autocomplete": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 20,
+          "token_chars": ["letter", "digit", "punctuation", "symbol"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "search": {
+        "type": "text",
+        "analyzer": "autocomplete",
+        "search_analyzer": "autocomplete_search"
+      }
+    }
+  }
+}
+
+# close index to update settings
+POST my-index-000001/_close
+
+# update settings
+PUT my-index-000001/_settings 
+{
+    "analysis": {
+      "analyzer": {
+        "autocomplete": {
+          "tokenizer": "autocomplete",
+          "filter": [
+            "my_multiplexer"
+          ]
+        },
+        "autocomplete_search": {
+          "tokenizer": "lowercase"
+        }
+      },
+      "filter": {
+        "my_multiplexer": {
+          "type": "multiplexer",
+          "filters": [ "lowercase", "no_symbol_filter, lowercase", "space_symbol_filter, trim, lowercase, stop"]
+        },
+        "no_symbol_filter": {
+          "type": "pattern_replace",
+          "pattern": "['|&|+|-|_|!]",
+          "replacement": ""
+        },
+        "space_symbol_filter": {
+          "type": "pattern_replace",
+          "pattern": "['|&|+|-|_|!]",
+          "replacement": " "
+        }
+      },
+      "tokenizer": {
+        "autocomplete": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 20,
+          "token_chars": ["letter", "digit", "punctuation", "symbol"]
+        }
+      }
+    }
+  }
+
+# open index 
+POST my-index-000001/_open
+
+
+# analyze
+POST my-index-000001/_analyze
+{
+  "analyzer": "autocomplete",
+  "text": "barney's"
+}
+
+# analyze
+POST my-index-000001/_analyze
+{
+  "analyzer": "autocomplete",
+  "text": "jack&jones"
+}
+
+POST my-index-000001/_analyze
+{
+  "analyzer": "autocomplete",
+  "text": "mens tops"
+}
+
+# refresh - do not forget!!!!
+POST my-index-000001/_refresh
+
+
+# search
+GET my-index-000001/_search
+{
+  "query": {
+    "match": {
+      "search": {
+        "query": "mens t",
+        "operator": "and"
+      }
+    }
+  },
+  "highlight": {
+    "fields": {
+          "search": {
+            "pre_tags": ["**"],
+            "post_tags": ["**"]
+          }
+        }
+  }
+}
+
+# insert data
+PUT my-index-000001/_doc/2
+{
+  "search": "mens tops" 
+}
+
+PUT my-index-000001/_doc/3
+{
+  "search": "mens bottoms" 
+}
+
+PUT my-index-000001/_doc/4
+{
+  "search": "mens" 
+}
+
+PUT my-index-000001/_doc/5
+{
+  "search": "womens accessories" 
+}
+
+PUT my-index-000001/_doc/6
+{
+  "search": "womens astra-good" 
+}
+
+PUT my-index-000001/_doc/womens_accessories
+{
+  "search": "womens 21forever" 
+}
+
+PUT my-index-000001/_doc/womens-accessories
+{
+  "search": "womens accessories" 
+}
+
+PUT my-index-000001/_doc/jordan-4
+{
+  "search": "jordan 4" 
+}
+
+PUT my-index-000001/_doc/jordan-5
+{
+  "search": "jordan 5" 
+}
+
+PUT my-index-000001/_doc/jordan
+{
+  "search": "jordan" 
+}
+
+PUT my-index-000001/_doc/jordan-7
+{
+  "search": "jordan 7" 
+}
+
+
+PUT my-index-000001/_doc/barney's
+{
+  "search": "barney's" 
+}
+
+
+PUT my-index-000001/_doc/jackjones
+{
+  "search": "jack&jones" 
+}
+
+DELETE test
+PUT test
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "autocomplete": {
+          "tokenizer": "autocomplete",
+          "filter": [
+            "lowercase"
+          ],
+          "char_filter": []
+        },
+        "autocomplete_search": {
+          "tokenizer": "lowercase"
+        }
+      },
+      "tokenizer": {
+        "autocomplete": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 10,
+          "token_chars": [
+            "letter",
+            "digit"
+          ]
+        }
+        
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "analyzer": "autocomplete",
+        "search_analyzer": "autocomplete_search"
+      }
+    }
+  }
+}
+
+# analyze
+POST test/_analyze
+{
+  "analyzer": "autocomplete_no_space",
+  "text": "jack&jones mens"
+}
+
+POST test/_analyze
+{
+  "analyzer": "autocomplete",
+  "text": "barney's"
+}
+
+PUT test/_doc/1
+{
+  "title": "barney's" 
+}
+
+PUT test/_doc/2
+{
+  "title": "jack&jones" 
+}
+PUT test/_doc/jack&jones_mens
+{
+  "title": "jack&jones mens" 
+}
+PUT test/_doc/jack&jones_tops
+{
+  "title": "jack&jones tops" 
+}
+PUT test/_doc/jack&jones_hoodie
+{
+  "title": "jack&jones hoodie" 
+}
+
+PUT test/_doc/3
+{
+  "title": "alice + jane" 
+}
+
+PUT test/_doc/4
+{
+  "title": "q/s helo" 
+}
+POST test/_refresh
+
+GET test/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "jck j m",
+        "fuzziness": "auto", 
+        "operator": "and"
+      } 
+    }
+  },
+  "highlight": {
+    "fields": {
+      "title": {
+        "pre_tags": ["**"],
+        "post_tags": ["**"]
+
+      }
+    }
+  }
+}
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match_phrase": {
+      "search.ngram": {
+        "query": "m", 
+        "operator": "and"
+      }
+    }
+  }
+}
+
+POST test/_analyze
+{
+  "analyzer": "autocomplete",
+  "text": "mens tops"
+}
+
+# completion
+
+PUT music
+{
+  "mappings": {
+    "properties": {
+      "suggest": {
+        "type": "completion"
+      },
+      "title": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+
+PUT music/_doc/1?refresh
+{
+  "suggest" : {
+    "input": [ 
+      "jack&jones", 
+      "mens tops", 
+      "mens bottoms", 
+      "mens", 
+      "alice + olivia", 
+      "barley's" ]
+  }
+}
+
+POST music/_search?pretty
+{
+  "suggest": {
+    "song-suggest": {
+      "prefix": "jones",        
+      "completion": {         
+          "field": "suggest"  
+      }
+    }
+  }
+}
+
+
+DELETE phrase_suggester
+PUT phrase_suggester
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "analysis": {
+        "analyzer": {
+          "trigram": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": ["lowercase","shingle"]
+          },
+          "reverse": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": ["lowercase","reverse"]
+          }
+        },
+        "filter": {
+          "shingle": {
+            "type": "shingle",
+            "min_shingle_size": 2,
+            "max_shingle_size": 3
+          }
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "fields": {
+          "trigram": {
+            "type": "text",
+            "analyzer": "trigram"
+          },
+          "reverse": {
+            "type": "text",
+            "analyzer": "reverse"
+          }
+        }
+      }
+    }
+  }
+}
+
+POST phrase_suggester/_doc?refresh=true
+{"title": "noble warriors"}
+POST phrase_suggester/_doc?refresh=true
+{"title": "nobel prize blue"}
+POST phrase_suggester/_doc?refresh=true
+{"title": "jack&jones"}
+POST phrase_suggester/_search
+{
+  "suggest": {
+    "text": "nbl prize blue",
+    "simple_phrase": {
+      "phrase": {
+        "field": "title.trigram",
+        "size": 1,
+        "gram_size": 3,
+        "direct_generator": [ {
+          "field": "title.trigram",
+          "suggest_mode": "always"
+        } ],
+        "highlight": {
+          "pre_tag": "<em>",
+          "post_tag": "</em>"
+        }
+      }
+    }
+  }
+}
+
+DELETE search_as_type
+PUT search_as_type
+{
+  "mappings": {
+    "properties": {
+      "search": {
+        "type": "search_as_you_type"
+      }
+    }
+  }
+}
+
+PUT search_as_type/_doc/1?refresh
+{
+  "search": "jack&jones"
+}
+
+GET search_as_type/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "jckjones",
+      "type": "bool_prefix",
+      "fields": [
+        "search",
+        "search._2gram",
+        "search._3gram"
+      ]
+    }
+  }
+}

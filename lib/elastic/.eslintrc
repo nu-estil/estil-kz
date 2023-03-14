@@ -1,0 +1,42 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "plugins": [
+        "@typescript-eslint",
+        "prettier"
+    ],
+    "rules": {
+        "no-var": "error",
+        "space-in-parens": "error",
+        "no-multiple-empty-lines": "error",
+        "prefer-const": "error",
+        "quotes": [
+            "error",
+            "single"
+        ],
+        // we want to force semicolons
+        "semi": [
+            "error",
+            "always"
+        ],
+        // we want to avoid extraneous spaces
+        "no-multi-spaces": [
+            "error"
+        ]
+    },
+    "ignorePatterns": [
+        "**/*.d.ts"
+    ]
+}

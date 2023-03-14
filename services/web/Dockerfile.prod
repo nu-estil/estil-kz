@@ -1,0 +1,53 @@
+FROM node:16-alpine AS dependencies
+
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+COPY .yarn/ ./.yarn/
+COPY .yarnrc.yml package.json yarn.lock ./ 
+
+COPY services/web/package.json ./services/web/package.json
+
+RUN yarn workspaces focus @depop/web
+
+# Rebuild the source code only when needed
+
+FROM node:16-alpine AS builder
+
+WORKDIR /app
+# 
+COPY .yarnrc.yml package.json yarn.lock  ./ 
+COPY services/web ./services/web
+# 
+COPY --from=dependencies /app/.yarn ./.yarn
+COPY --from=dependencies /app/.pnp.cjs .pnp.cjs
+COPY --from=dependencies /app/.pnp.loader.mjs .pnp.loader.mjs
+
+RUN yarn run build
+
+# # Production image, copy all the files and run next
+FROM node:16-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# copy dependencies
+COPY --from=builder /app/.yarn ./.yarn
+COPY --from=builder /app/.pnp.cjs .pnp.cjs
+COPY --from=builder /app/.pnp.loader.mjs .pnp.loader.mjs
+
+COPY .yarnrc.yml package.json yarn.lock  ./ 
+COPY services/web/package.json ./services/web/package.json
+
+# copy build
+COPY --from=builder /app/services/web/.next ./services/web/
+
+USER nextjs
+EXPOSE 3000
+
+CMD ["yarn", "web", "start"]
