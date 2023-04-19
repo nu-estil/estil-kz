@@ -103,6 +103,17 @@ services:
       - POSTGRES_USER=depop_sms
       - POSTGRES_PASSWORD=change-in-production
       - POSTGRES_DB=depop_sms
+  
+  postgres-recommendation:
+    image: postgres:13
+    ports:
+      - 9004:5432
+    # volumes:
+    #   - postgres-recommendation:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=depop_recommendation
+      - POSTGRES_PASSWORD=change-in-production
+      - POSTGRES_DB=depop_recommendation
 
   backend:
     image: backend:latest
