@@ -27,8 +27,9 @@ def create_interaction(db: Session, interaction: Interaction):
         db.commit()
         return existing_interaction
     else:
+        interaction = interaction.dict()
         interaction["score"] = score_map[interaction.pop("interaction_type")]
-        db_interaction = UserInteraction(**interaction.dict())
+        db_interaction = UserInteraction(**interaction)
         db.add(db_interaction)
         db.commit()
         db.refresh(db_interaction)
@@ -39,20 +40,20 @@ def get_recommendations(db: Session, user_id: int):
     interactions = db.query(UserInteraction).all()
 
     dataset = Dataset()
-    dataset.fit((x.user_id for x in interactions),
-                (x.item_id for x in interactions))
+    user_ids = [x.user_id for x in interactions]
+    item_ids = [x.item_id for x in interactions]
+    dataset.fit(user_ids, item_ids)
 
     num_users, num_items = dataset.interactions_shape()
     interaction_data = dataset.build_interactions(
         ((x.user_id, x.item_id, x.score) for x in interactions))
-    breakpoint()
 
     model = LightFM(loss="warp")
     model.fit(interaction_data[0], epochs=30, num_threads=2)
 
     # Ensure the user_id is within the model's user range
     mappings = dataset.mapping()
-    user_id_mapping, item_id_mapping = mappings[0], mappings[1]
+    user_id_mapping, item_id_mapping = mappings[1], mappings[2]
 
     if user_id not in user_id_mapping:
         return []
