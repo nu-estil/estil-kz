@@ -5,6 +5,12 @@ from models import UserInteraction
 from schemas import Interaction
 from sqlalchemy.orm import Session
 
+score_map = {
+    "view": 3,
+    "like": 7,
+    "purchase": 10,
+}
+
 
 def create_interaction(db: Session, interaction: Interaction):
     existing_interaction = (
@@ -12,21 +18,22 @@ def create_interaction(db: Session, interaction: Interaction):
         .filter(
             UserInteraction.user_id == interaction.user_id,
             UserInteraction.item_id == interaction.item_id,
-            UserInteraction.interaction_type == interaction.interaction_type,
         )
         .first()
     )
 
     if existing_interaction:
-        existing_interaction.count += 1
+        existing_interaction.score += score_map[interaction.interaction_type]
         db.commit()
         return existing_interaction
     else:
+        interaction["score"] = score_map[interaction.pop("interaction_type")]
         db_interaction = UserInteraction(**interaction.dict())
         db.add(db_interaction)
         db.commit()
         db.refresh(db_interaction)
         return db_interaction
+
 
 def get_recommendations(db: Session, user_id: int):
     interactions = db.query(UserInteraction).all()
@@ -36,7 +43,9 @@ def get_recommendations(db: Session, user_id: int):
                 (x.item_id for x in interactions))
 
     num_users, num_items = dataset.interactions_shape()
-    interaction_data = dataset.build_interactions(((x.user_id, x.item_id, x.count) for x in interactions))
+    interaction_data = dataset.build_interactions(
+        ((x.user_id, x.item_id, x.score) for x in interactions))
+    breakpoint()
 
     model = LightFM(loss="warp")
     model.fit(interaction_data[0], epochs=30, num_threads=2)
@@ -44,7 +53,7 @@ def get_recommendations(db: Session, user_id: int):
     # Ensure the user_id is within the model's user range
     mappings = dataset.mapping()
     user_id_mapping, item_id_mapping = mappings[0], mappings[1]
-    
+
     if user_id not in user_id_mapping:
         return []
 
@@ -55,4 +64,6 @@ def get_recommendations(db: Session, user_id: int):
 
     # Reverse the mapping to return the original item_ids
     reverse_item_id_mapping = {v: k for k, v in item_id_mapping.items()}
-    return [reverse_item_id_mapping[internal_item_id] for internal_item_id in top_internal_items if internal_item_id in reverse_item_id_mapping]
+    return [reverse_item_id_mapping[internal_item_id]
+            for internal_item_id in top_internal_items
+            if internal_item_id in reverse_item_id_mapping]
